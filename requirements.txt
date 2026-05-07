@@ -1,0 +1,5 @@
+Counter
+pandas
+serpapi
+openpyxl
+python-dotenv
