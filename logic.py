@@ -1,6 +1,6 @@
 from collections import Counter, defaultdict
 import os
-
+import pickle
 import pandas as pd
 import serpapi
 from dotenv import load_dotenv
@@ -13,9 +13,19 @@ if not API_KEY:
         "Не найден SERPAPI_API_KEY в .env. "
         "Создайте файл .env и добавьте строку SERPAPI_API_KEY=ваш_ключ"
     )
-
 client = serpapi.Client(api_key=API_KEY)
-load_indexes("indexes.pkl")
+
+# ✅ 1. Определяем функцию
+def load_indexes(file_path: str) -> dict:
+    with open(file_path, "rb") as f:
+        return pickle.load(f)
+
+# ✅ 2. Загружаем и сразу распаковываем в переменные
+INDEXES = load_indexes("indexes.pkl")
+item_to_orders          = INDEXES["item_to_orders"]
+order_to_items          = INDEXES["order_to_items"]
+item_to_supplier_count  = INDEXES["item_to_supplier_count"]
+item_to_torgs           = INDEXES["item_to_torgs"]
 
 
 def get_frequent_companions(
