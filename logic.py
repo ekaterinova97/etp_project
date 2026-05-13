@@ -29,17 +29,18 @@ def build_indexes(df: pd.DataFrame):
     item_to_orders = defaultdict(set)
     order_to_items = defaultdict(set)
     item_to_supplier_count = {}
+    item_to_torgs = {}
 
     for _, row in df.iterrows():
         order_id = row["order_id"]
         item_name = row["item_name"]
         supplier_count = row["supplier_count"]
-        item_to_torgs = row["item_to_torgs"]
+        torgs_value = row["item_to_torgs"]
 
         item_to_orders[item_name].add(order_id)
         order_to_items[order_id].add(item_name)
         item_to_supplier_count[item_name] = supplier_count
-        item_to_torgs[item_name] = item_to_torgs
+        item_to_torgs[item_name] = torgs_value
 
     return item_to_orders, order_to_items, item_to_supplier_count, item_to_torgs
 
