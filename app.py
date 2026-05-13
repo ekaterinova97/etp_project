@@ -4,8 +4,8 @@ from logic import load_data, build_indexes, get_frequent_companions, search_ai
 app = Flask(__name__)
 
 # Данные загружаются один раз при старте сервера
-df = load_data("etpetp_full.xlsx")
-item_to_orders, order_to_items, item_to_supplier_count = build_indexes(df)
+df = load_data("combined.xlsx")
+item_to_orders, order_to_items, item_to_supplier_count, item_to_torgs = build_indexes(df)
 
 HTML = """
 <!DOCTYPE html>
@@ -233,6 +233,7 @@ HTML = """
               <th>B всего</th>
               <th>Вероятность</th>
               <th>Предложений</th>
+              <th>Категория торгов</th>
             </tr>
           </thead>
           <tbody>
@@ -281,7 +282,7 @@ def index():
         return render_template_string(HTML, error="Введите название номенклатуры.")
 
     results, total = get_frequent_companions(
-        query, item_to_orders, order_to_items, item_to_supplier_count, top_n=10
+        query, item_to_orders, order_to_items, item_to_supplier_count, item_to_torgs, top_n=10
     )
 
     if results is None:
