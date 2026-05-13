@@ -243,7 +243,7 @@ HTML = """
             </tr>
           </thead>
           <tbody>
-            {% for item, count_ab, count_b, prob, sup_count in results %}
+            {% for item, count_ab, count_b, prob, sup_count, torgs in results %}
             <tr>
               <td>{{ loop.index }}</td>
               <td>{{ item }}</td>
@@ -251,6 +251,7 @@ HTML = """
               <td>{{ count_b }}</td>
               <td>{{ "%.1f%%"|format(prob * 100) }}</td>
               <td>{{ sup_count }}</td>
+              <td>{{ torgs }}</td>
             </tr>
             {% endfor %}
           </tbody>
