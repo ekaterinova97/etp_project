@@ -19,7 +19,7 @@ client = serpapi.Client(api_key=API_KEY)
 
 def load_data(file_path: str) -> pd.DataFrame:
     df = pd.read_excel(file_path)
-    df.columns = ["order_id", "item_name", "supplier_count"]
+    df.columns = ["order_id", "item_name", "supplier_count", "item_to_torgs"]
     df = df.dropna()
     df = df.drop_duplicates()
     return df
@@ -34,12 +34,14 @@ def build_indexes(df: pd.DataFrame):
         order_id = row["order_id"]
         item_name = row["item_name"]
         supplier_count = row["supplier_count"]
+        item_to_torgs = row["item_to_torgs"]
 
         item_to_orders[item_name].add(order_id)
         order_to_items[order_id].add(item_name)
         item_to_supplier_count[item_name] = supplier_count
+        item_to_torgs[item_name] = item_to_torgs
 
-    return item_to_orders, order_to_items, item_to_supplier_count
+    return item_to_orders, order_to_items, item_to_supplier_count, item_to_torgs
 
 
 def get_frequent_companions(
@@ -47,6 +49,7 @@ def get_frequent_companions(
     item_to_orders,
     order_to_items,
     item_to_supplier_count,
+    item_to_torgs,
     top_n: int = 10,
 ):
     if target_item not in item_to_orders:
