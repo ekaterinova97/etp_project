@@ -55,7 +55,7 @@ def get_frequent_companions(
         if count_b > 1:
             supplier_count = item_to_supplier_count.get(item, 0)
             results.append(
-                (item, count_ab, count_b, round(probability, 3), supplier_count)
+                (item, count_ab, count_b, round(probability, 3), supplier_count, item_to_torgs.get(item, ""))
             )
 
     results_sorted = sorted(results, key=lambda x: (-x[3], -x[1]))[:top_n]
