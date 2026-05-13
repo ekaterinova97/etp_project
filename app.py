@@ -1,11 +1,15 @@
-from flask import Flask, request, render_template_string
-from logic import load_data, build_indexes, get_frequent_companions, search_ai
+from logic import get_frequent_companions, search_ai
+import pickle
 
 app = Flask(__name__)
 
-# Данные загружаются один раз при старте сервера
-df = load_data("combined.xlsx")
-item_to_orders, order_to_items, item_to_supplier_count, item_to_torgs = build_indexes(df)
+with open("indexes.pkl", "rb") as f:
+    INDEXES = pickle.load(f)
+
+item_to_orders         = INDEXES["item_to_orders"]
+order_to_items         = INDEXES["order_to_items"]
+item_to_supplier_count = INDEXES["item_to_supplier_count"]
+item_to_torgs          = INDEXES["item_to_torgs"]
 
 HTML = """
 <!DOCTYPE html>
