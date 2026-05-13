@@ -1,5 +1,6 @@
 from logic import get_frequent_companions, search_ai
 import pickle
+from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
