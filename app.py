@@ -1,17 +1,18 @@
 import os
-from logic import get_frequent_companions, search_ai
 import pickle
 from flask import Flask, request, render_template_string
+from logic import (
+    get_frequent_companions,
+    get_competitors,
+    get_supplier_categories,
+    search_ai,
+    item_to_orders,
+    order_to_items,
+    item_to_supplier_count,
+    item_to_torgs,
+)
 
 app = Flask(__name__)
-
-with open("indexes.pkl", "rb") as f:
-    INDEXES = pickle.load(f)
-
-item_to_orders         = INDEXES["item_to_orders"]
-order_to_items         = INDEXES["order_to_items"]
-item_to_supplier_count = INDEXES["item_to_supplier_count"]
-item_to_torgs          = INDEXES["item_to_torgs"]
 
 HTML = """
 <!DOCTYPE html>
@@ -37,7 +38,7 @@ HTML = """
     }
 
     header {
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
       border-bottom: 2px solid #2a2420;
       padding-bottom: 1.5rem;
     }
@@ -55,6 +56,39 @@ HTML = """
       font-style: italic;
     }
 
+    /* ТАБЫ */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #2a2420;
+    }
+
+    .tab-link {
+      padding: 0.7rem 1.4rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      color: #6b5e56;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      display: inline-block;
+      transition: color 0.15s;
+    }
+
+    .tab-link:hover { color: #2a2420; }
+
+    .tab-link.active {
+      color: #2a2420;
+      border-bottom: 3px solid #2a2420;
+      font-weight: bold;
+    }
+
+    /* ФОРМА */
     .search-block {
       display: flex;
       gap: 12px;
@@ -74,11 +108,9 @@ HTML = """
       transition: border-color 0.15s;
     }
 
-    input[type="text"]:focus {
-      border-color: #8b5e3c;
-    }
+    input[type="text"]:focus { border-color: #8b5e3c; }
 
-    button {
+    button[type="submit"] {
       padding: 0.85rem 1.8rem;
       font-size: 1rem;
       font-family: inherit;
@@ -92,8 +124,8 @@ HTML = """
       white-space: nowrap;
     }
 
-    button:hover { background: #4a3830; }
-    button:active { background: #1a1510; }
+    button[type="submit"]:hover { background: #4a3830; }
+    button[type="submit"]:active { background: #1a1510; }
 
     .loading {
       display: none;
@@ -135,10 +167,7 @@ HTML = """
       background: #fff;
     }
 
-    thead tr {
-      background: #2a2420;
-      color: #f5f2ed;
-    }
+    thead tr { background: #2a2420; color: #f5f2ed; }
 
     thead th {
       padding: 0.65rem 0.9rem;
@@ -190,25 +219,46 @@ HTML = """
       border-radius: 2px;
     }
 
-    .no-results {
-      font-style: italic;
-      color: #6b5e56;
+    .no-results { font-style: italic; color: #6b5e56; }
+
+    /* Список категорий */
+    .category-list {
+      list-style: none;
+      background: #fff;
+      border: 1px solid #e0d8ce;
+      border-radius: 2px;
     }
+
+    .category-list li {
+      padding: 0.6rem 0.9rem;
+      border-bottom: 1px solid #e8e0d6;
+      font-size: 0.92rem;
+    }
+
+    .category-list li:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <h1>Анализ закупок</h1>
-      <p class="subtitle">Поиск сопутствующей номенклатуры</p>
+      <p class="subtitle">Инструмент для работы с данными тендеров</p>
     </header>
 
-    <form method="POST" action="/" onsubmit="document.querySelector('.loading').style.display='block'">
+    <!-- ТАБЫ -->
+    <nav class="tabs">
+      <a class="tab-link {% if tab == 'items' %}active{% endif %}" href="/">Сопутствующая номенклатура</a>
+      <a class="tab-link {% if tab == 'competitors' %}active{% endif %}" href="/competitors">Конкуренты поставщика</a>
+      <a class="tab-link {% if tab == 'categories' %}active{% endif %}" href="/categories">Категории поставщика</a>
+    </nav>
+
+    <!-- ФОРМА -->
+    <form method="POST" action="{{ action }}" onsubmit="document.querySelector('.loading').style.display='block'">
       <div class="search-block">
         <input
           type="text"
           name="query"
-          placeholder="Введите номенклатуру..."
+          placeholder="{{ placeholder }}"
           value="{{ query or '' }}"
           autofocus
           autocomplete="off"
@@ -217,18 +267,18 @@ HTML = """
       </div>
     </form>
 
-    <p class="loading">Идёт поиск и запрос к AI, это может занять несколько секунд...</p>
+    <p class="loading">Ищем...</p>
 
     {% if error %}
       <div class="error-block">{{ error }}</div>
     {% endif %}
 
-    {% if results is not none %}
+    <!-- РЕЗУЛЬТАТЫ: номенклатура -->
+    {% if tab == 'items' and results is not none %}
       <div class="result-header">
         <h2>Результаты для: «{{ query }}»</h2>
         <p class="meta">Всего заказов с этим товаром: {{ total }}</p>
       </div>
-
       {% if results %}
         <table>
           <thead>
@@ -257,14 +307,13 @@ HTML = """
           </tbody>
         </table>
         <div class="legend">
-          A∩B — сколько раз товары куплены вместе &nbsp;·&nbsp;
+          A∩B — сколько раз куплены вместе &nbsp;·&nbsp;
           B всего — сколько раз товар B куплен во всех заказах &nbsp;·&nbsp;
           Вероятность = A∩B / B всего
         </div>
       {% else %}
-        <p class="no-results">Этот товар никогда не покупался вместе с другими номенклатурами (или все B = 1).</p>
+        <p class="no-results">Этот товар не покупался вместе с другими.</p>
       {% endif %}
-
       {% if ai_answer %}
         <div class="ai-block">
           <h3>AI-анализ</h3>
@@ -272,6 +321,54 @@ HTML = """
         </div>
       {% endif %}
     {% endif %}
+
+    <!-- РЕЗУЛЬТАТЫ: конкуренты -->
+    {% if tab == 'competitors' and results is not none %}
+      <div class="result-header">
+        <h2>Конкуренты: «{{ query }}»</h2>
+        <p class="meta">Участвовал в {{ total }} лотах. Встречался с:</p>
+      </div>
+      {% if results %}
+        <table>
+          <thead>
+            <tr>
+              <th>№</th>
+              <th>Организация</th>
+              <th>Совместных лотов</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for name, count in results %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ name }}</td>
+              <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="no-results">Конкурентов не найдено.</p>
+      {% endif %}
+    {% endif %}
+
+    <!-- РЕЗУЛЬТАТЫ: категории -->
+    {% if tab == 'categories' and results is not none %}
+      <div class="result-header">
+        <h2>Категории торгов: «{{ query }}»</h2>
+        <p class="meta">Участвовал в {{ total }} лотах. Категории:</p>
+      </div>
+      {% if results %}
+        <ul class="category-list">
+          {% for cat in results %}
+          <li>{{ loop.index }}. {{ cat }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="no-results">Категории не найдены.</p>
+      {% endif %}
+    {% endif %}
+
   </div>
 </body>
 </html>
@@ -280,32 +377,64 @@ HTML = """
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    ctx = dict(tab="items", action="/", placeholder="Введите номенклатуру...")
+
     if request.method == "GET":
-        return render_template_string(HTML)
+        return render_template_string(HTML, **ctx)
 
     query = request.form.get("query", "").strip()
-
     if not query:
-        return render_template_string(HTML, error="Введите название номенклатуры.")
+        return render_template_string(HTML, error="Введите название номенклатуры.", **ctx)
 
     results, total = get_frequent_companions(
         query, item_to_orders, order_to_items, item_to_supplier_count, item_to_torgs, top_n=10
     )
 
     if results is None:
-        return render_template_string(HTML, query=query, error=total)
+        return render_template_string(HTML, query=query, error=total, **ctx)
 
     ai_answer = search_ai(query)
+    return render_template_string(HTML, query=query, results=results, total=total, ai_answer=ai_answer, **ctx)
 
-    return render_template_string(
-        HTML,
-        query=query,
-        results=results,
-        total=total,
-        ai_answer=ai_answer,
-    )
+
+@app.route("/competitors", methods=["GET", "POST"])
+def competitors():
+    ctx = dict(tab="competitors", action="/competitors", placeholder="Введите название организации...")
+
+    if request.method == "GET":
+        return render_template_string(HTML, **ctx)
+
+    query = request.form.get("query", "").strip()
+    if not query:
+        return render_template_string(HTML, error="Введите название организации.", **ctx)
+
+    results, total = get_competitors(query, top_n=20)
+
+    if results is None:
+        return render_template_string(HTML, query=query, error=total, **ctx)
+
+    return render_template_string(HTML, query=query, results=results, total=total, **ctx)
+
+
+@app.route("/categories", methods=["GET", "POST"])
+def categories():
+    ctx = dict(tab="categories", action="/categories", placeholder="Введите название организации...")
+
+    if request.method == "GET":
+        return render_template_string(HTML, **ctx)
+
+    query = request.form.get("query", "").strip()
+    if not query:
+        return render_template_string(HTML, error="Введите название организации.", **ctx)
+
+    results, total = get_supplier_categories(query)
+
+    if results is None:
+        return render_template_string(HTML, query=query, error=total, **ctx)
+
+    return render_template_string(HTML, query=query, results=results, total=total, **ctx)
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5002))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
