@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 import serpapi
 from dotenv import load_dotenv
+import gzip
 
 load_dotenv()
 
@@ -21,7 +22,6 @@ client = serpapi.Client(api_key=API_KEY)
 # ---------------------------------------------------------------
 
 # в logic.py — замени load_indexes на это:
-import gzip
 
 def load_indexes(file_path):
     with gzip.open(file_path, "rb") as f:
