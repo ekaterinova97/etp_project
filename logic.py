@@ -20,11 +20,14 @@ client = serpapi.Client(api_key=API_KEY)
 # ЗАГРУЗКА ИНДЕКСОВ
 # ---------------------------------------------------------------
 
-def load_indexes(file_path: str) -> dict:
-    with open(file_path, "rb") as f:
+# в logic.py — замени load_indexes на это:
+import gzip
+
+def load_indexes(file_path):
+    with gzip.open(file_path, "rb") as f:
         return pickle.load(f)
 
-INDEXES = load_indexes("indexes.pkl")
+INDEXES = load_indexes("indexes.pkl.gz")
 
 item_to_orders          = INDEXES["item_to_orders"]
 order_to_items          = INDEXES["order_to_items"]
