@@ -11,6 +11,7 @@ from logic import (
     order_to_items,
     item_to_supplier_count,
     item_to_torgs,
+    get_supplier_item_categories,
 )
 
 app = Flask(__name__)
