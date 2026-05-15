@@ -27,7 +27,7 @@ def load_indexes(file_path):
     with gzip.open(file_path, "rb") as f:
         return pickle.load(f)
 
-INDEXES = load_indexes("indexes.pkl.gz")
+INDEXES = load_indexes("indeksi.pkl.gz")
 
 item_to_orders          = INDEXES["item_to_orders"]
 order_to_items          = INDEXES["order_to_items"]
