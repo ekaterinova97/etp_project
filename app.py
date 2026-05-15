@@ -5,6 +5,7 @@ from logic import (
     get_frequent_companions,
     get_competitors,
     get_supplier_categories,
+    get_supplier_item_categories,
     search_ai,
     item_to_orders,
     order_to_items,
@@ -56,17 +57,17 @@ HTML = """
       font-style: italic;
     }
 
-    /* ТАБЫ */
     .tabs {
       display: flex;
       gap: 0;
       margin-bottom: 2rem;
       border-bottom: 2px solid #2a2420;
+      flex-wrap: wrap;
     }
 
     .tab-link {
-      padding: 0.7rem 1.4rem;
-      font-size: 0.9rem;
+      padding: 0.7rem 1.2rem;
+      font-size: 0.88rem;
       font-family: inherit;
       background: none;
       border: none;
@@ -88,7 +89,6 @@ HTML = """
       font-weight: bold;
     }
 
-    /* ФОРМА */
     .search-block {
       display: flex;
       gap: 12px;
@@ -221,7 +221,6 @@ HTML = """
 
     .no-results { font-style: italic; color: #6b5e56; }
 
-    /* Список категорий */
     .category-list {
       list-style: none;
       background: #fff;
@@ -245,14 +244,13 @@ HTML = """
       <p class="subtitle">Инструмент для работы с данными тендеров</p>
     </header>
 
-    <!-- ТАБЫ -->
     <nav class="tabs">
       <a class="tab-link {% if tab == 'items' %}active{% endif %}" href="/">Сопутствующая номенклатура</a>
       <a class="tab-link {% if tab == 'competitors' %}active{% endif %}" href="/competitors">Конкуренты поставщика</a>
-      <a class="tab-link {% if tab == 'categories' %}active{% endif %}" href="/categories">Категории поставщика</a>
+      <a class="tab-link {% if tab == 'categories' %}active{% endif %}" href="/categories">Категории торгов</a>
+      <a class="tab-link {% if tab == 'item_categories' %}active{% endif %}" href="/item_categories">Номенклатуры поставщика</a>
     </nav>
 
-    <!-- ФОРМА -->
     <form method="POST" action="{{ action }}" onsubmit="document.querySelector('.loading').style.display='block'">
       <div class="search-block">
         <input
@@ -273,7 +271,7 @@ HTML = """
       <div class="error-block">{{ error }}</div>
     {% endif %}
 
-    <!-- РЕЗУЛЬТАТЫ: номенклатура -->
+    <!-- ВКЛ 1: сопутствующая номенклатура -->
     {% if tab == 'items' and results is not none %}
       <div class="result-header">
         <h2>Результаты для: «{{ query }}»</h2>
@@ -322,7 +320,7 @@ HTML = """
       {% endif %}
     {% endif %}
 
-    <!-- РЕЗУЛЬТАТЫ: конкуренты -->
+    <!-- ВКЛ 2: конкуренты -->
     {% if tab == 'competitors' and results is not none %}
       <div class="result-header">
         <h2>Конкуренты: «{{ query }}»</h2>
@@ -352,7 +350,7 @@ HTML = """
       {% endif %}
     {% endif %}
 
-    <!-- РЕЗУЛЬТАТЫ: категории -->
+    <!-- ВКЛ 3: категории торгов -->
     {% if tab == 'categories' and results is not none %}
       <div class="result-header">
         <h2>Категории торгов: «{{ query }}»</h2>
@@ -366,6 +364,23 @@ HTML = """
         </ul>
       {% else %}
         <p class="no-results">Категории не найдены.</p>
+      {% endif %}
+    {% endif %}
+
+    <!-- ВКЛ 4: категории номенклатуры поставщика -->
+    {% if tab == 'item_categories' and results is not none %}
+      <div class="result-header">
+        <h2>Номенклатуры поставщика: «{{ query }}»</h2>
+        <p class="meta">Участвовал в {{ total }} лотах. Категории номенклатуры:</p>
+      </div>
+      {% if results %}
+        <ul class="category-list">
+          {% for cat in results %}
+          <li>{{ loop.index }}. {{ cat }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="no-results">Категории номенклатуры не найдены.</p>
       {% endif %}
     {% endif %}
 
@@ -428,6 +443,25 @@ def categories():
         return render_template_string(HTML, error="Введите название организации.", **ctx)
 
     results, total = get_supplier_categories(query)
+
+    if results is None:
+        return render_template_string(HTML, query=query, error=total, **ctx)
+
+    return render_template_string(HTML, query=query, results=results, total=total, **ctx)
+
+
+@app.route("/item_categories", methods=["GET", "POST"])
+def item_categories():
+    ctx = dict(tab="item_categories", action="/item_categories", placeholder="Введите название организации...")
+
+    if request.method == "GET":
+        return render_template_string(HTML, **ctx)
+
+    query = request.form.get("query", "").strip()
+    if not query:
+        return render_template_string(HTML, error="Введите название организации.", **ctx)
+
+    results, total = get_supplier_item_categories(query)
 
     if results is None:
         return render_template_string(HTML, query=query, error=total, **ctx)
