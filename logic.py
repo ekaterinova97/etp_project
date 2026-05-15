@@ -36,6 +36,8 @@ item_to_torgs           = INDEXES["item_to_torgs"]
 supplier_to_lots        = INDEXES["supplier_to_lots"]
 lot_to_suppliers        = INDEXES["lot_to_suppliers"]
 supplier_to_categories  = INDEXES["supplier_to_categories"]
+item_to_category            = INDEXES["item_to_category"]
+supplier_to_item_categories = INDEXES["supplier_to_item_categories"]
 
 
 # ---------------------------------------------------------------
@@ -120,6 +122,13 @@ def get_supplier_categories(target_supplier: str):
         return None, f"Участник '{target_supplier}' не найден в базе!"
 
     categories = sorted(supplier_to_categories[target_supplier])
+    total_lots = len(supplier_to_lots[target_supplier])
+    return categories, total_lots
+    
+def get_supplier_item_categories(target_supplier: str):
+    if target_supplier not in supplier_to_item_categories:
+        return None, f"Участник '{target_supplier}' не найден в базе!"
+    categories = sorted(supplier_to_item_categories[target_supplier])
     total_lots = len(supplier_to_lots[target_supplier])
     return categories, total_lots
 
