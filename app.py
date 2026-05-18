@@ -246,10 +246,9 @@ HTML = """
     </header>
 
     <nav class="tabs">
-      <a class="tab-link {% if tab == 'items' %}active{% endif %}" href="/">Сопутствующая номенклатура</a>
-      <a class="tab-link {% if tab == 'competitors' %}active{% endif %}" href="/competitors">Конкуренты поставщика</a>
-      <a class="tab-link {% if tab == 'categories' %}active{% endif %}" href="/categories">Категории торгов</a>
-      <a class="tab-link {% if tab == 'item_categories' %}active{% endif %}" href="/item_categories">Номенклатуры поставщика</a>
+      <a class="tab-link {% if tab == 'items' %}active{% endif %}" href="/">ML-модель анализа совместных закупок</a>
+      <a class="tab-link {% if tab == 'competitors' %}active{% endif %}" href="/competitors">ML-модель анализа участников закупок</a>
+      <a class="tab-link {% if tab == 'item_categories' %}active{% endif %}" href="/item_categories">ML-модель участия в закупках по категориям</a>
     </nav>
 
     <form method="POST" action="{{ action }}" onsubmit="document.querySelector('.loading').style.display='block'">
