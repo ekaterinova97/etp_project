@@ -15,6 +15,12 @@ if not API_KEY:
     )
 client = serpapi.Client(api_key=API_KEY)
 
+def format_inn(inn: str) -> str:
+    """Убирает .0 из ИНН при выводе."""
+    try:
+        return str(int(float(inn)))
+    except (ValueError, TypeError):
+        return inn
 
 # ---------------------------------------------------------------
 # ЗАГРУЗКА ИНДЕКСОВ
@@ -47,22 +53,15 @@ item_to_procedure_participants  = INDEXES["item_to_procedure_participants"]
 # ---------------------------------------------------------------
 
 def resolve_supplier(query: str):
-    """
-    Принимает строку — название участника или ИНН.
-    Возвращает (participant_name, inn) или (None, None) если не найден.
-    """
     query = query.strip()
-
-    # если введены только цифры — считаем что это ИНН
     if query.isdigit():
         if query in inn_to_participant:
             name = inn_to_participant[query]
             return name, query
         return None, None
     else:
-        # введено название — ищем напрямую
         if query in supplier_to_lots:
-            inn = participant_to_inn.get(query, "")
+            inn = format_inn(participant_to_inn.get(query, ""))
             return query, inn
         return None, None
 
@@ -104,7 +103,7 @@ def get_frequent_companions(target_item: str, top_n: int = 10):
             participants_info.append({
                 "order_id":    order_id,
                 "participant": participant,
-                "inn":         inn,
+                "inn":         format_inn(inn),
                 "status":      status,
             })
 
