@@ -263,7 +263,7 @@ HTML = """
     {% if tab == 'items' and results is not none %}
       <div class="result-header">
         <h2>Результаты для: «{{ query }}»</h2>
-        <p class="meta">Всего заказов с этим товаром: {{ total }}</p>
+        <p class="meta">Всего лотов с этой номенклатурой: {{ total }}</p>
       </div>
       {% if results %}
         <table>
@@ -275,7 +275,7 @@ HTML = """
               <th>B всего</th>
               <th>Вероятность</th>
               <th>Предложений</th>
-              <th>Категория торгов</th>
+              <th>Категория номенклатуры</th>
             </tr>
           </thead>
           <tbody>
@@ -294,16 +294,16 @@ HTML = """
         </table>
         <div class="legend">
           A∩B — сколько раз куплены вместе &nbsp;·&nbsp;
-          B всего — сколько раз товар B куплен во всех заказах &nbsp;·&nbsp;
+          B всего — сколько раз товар B куплен во всех лотах &nbsp;·&nbsp;
           Вероятность = A∩B / B всего
         </div>
       {% else %}
-        <p class="no-results">Этот товар не покупался вместе с другими.</p>
+        <p class="no-results">Эта номенклатура не покупалась вместе с другими.</p>
       {% endif %}
 
       {% if participants_info %}
         <div class="participants-block">
-          <h3>Участники и победители процедур</h3>
+          <h3>Участники и победители торгов</h3>
           <table>
             <thead>
               <tr>
