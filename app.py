@@ -303,7 +303,7 @@ HTML = """
 
       {% if participants_info %}
         <div class="participants-block">
-          <h3>Участники и победители торгов</h3>
+          <h3>Участники процедур</h3>
           <table>
             <thead>
               <tr>
@@ -350,6 +350,7 @@ HTML = """
             <tr>
               <th>№</th>
               <th>Организация</th>
+              <th>ИНН</th>
               <th>Совместных лотов</th>
             </tr>
           </thead>
