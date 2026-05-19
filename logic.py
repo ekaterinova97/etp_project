@@ -124,15 +124,22 @@ def get_competitors(query: str, top_n: int = 20):
     if participant is None:
         return None, None, None, f"Участник '{query}' не найден в базе. Проверьте название или ИНН."
 
+    # Лоты, где участвовал этот поставщик
     lots = supplier_to_lots.get(participant, set())
     competitor_counter = Counter()
 
+    # Считаем, сколько раз каждый другой поставщик встречается с ним в одном лоте
     for lot_id in lots:
         for supplier in lot_to_suppliers[lot_id]:
             if supplier != participant:
                 competitor_counter[supplier] += 1
 
-    results = sorted(competitor_counter.items(), key=lambda x: -x[1])[:top_n]
+
+    results = []
+    for supplier, count in sorted(competitor_counter.items(), key=lambda x: -x[1])[:top_n]:
+        competitor_inn = participant_to_inn.get(supplier, "")
+        results.append((supplier, competitor_inn, count))
+
     return results, participant, inn, len(lots)
 
 
