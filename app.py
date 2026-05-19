@@ -1,17 +1,14 @@
 import os
-import pickle
 from flask import Flask, request, render_template_string
 from logic import (
     get_frequent_companions,
     get_competitors,
-    get_supplier_categories,
     get_supplier_item_categories,
     search_ai,
     item_to_orders,
     order_to_items,
     item_to_supplier_count,
     item_to_torgs,
-    get_supplier_item_categories,
 )
 
 app = Flask(__name__)
@@ -34,10 +31,7 @@ HTML = """
       padding: 3rem 1.5rem;
     }
 
-    .container {
-      max-width: 860px;
-      margin: 0 auto;
-    }
+    .container { max-width: 960px; margin: 0 auto; }
 
     header {
       margin-bottom: 2rem;
@@ -45,22 +39,11 @@ HTML = """
       padding-bottom: 1.5rem;
     }
 
-    h1 {
-      font-size: 2rem;
-      font-weight: normal;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.4rem;
-    }
-
-    .subtitle {
-      font-size: 0.95rem;
-      color: #6b5e56;
-      font-style: italic;
-    }
+    h1 { font-size: 2rem; font-weight: normal; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
+    .subtitle { font-size: 0.95rem; color: #6b5e56; font-style: italic; }
 
     .tabs {
       display: flex;
-      gap: 0;
       margin-bottom: 2rem;
       border-bottom: 2px solid #2a2420;
       flex-wrap: wrap;
@@ -83,19 +66,9 @@ HTML = """
     }
 
     .tab-link:hover { color: #2a2420; }
+    .tab-link.active { color: #2a2420; border-bottom: 3px solid #2a2420; font-weight: bold; }
 
-    .tab-link.active {
-      color: #2a2420;
-      border-bottom: 3px solid #2a2420;
-      font-weight: bold;
-    }
-
-    .search-block {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 2.5rem;
-      align-items: stretch;
-    }
+    .search-block { display: flex; gap: 12px; margin-bottom: 0.6rem; align-items: stretch; }
 
     input[type="text"] {
       flex: 1;
@@ -120,20 +93,20 @@ HTML = """
       border: none;
       cursor: pointer;
       border-radius: 2px;
-      letter-spacing: 0.02em;
       transition: background 0.15s;
       white-space: nowrap;
     }
 
     button[type="submit"]:hover { background: #4a3830; }
-    button[type="submit"]:active { background: #1a1510; }
 
-    .loading {
-      display: none;
-      font-style: italic;
+    .search-hint {
+      font-size: 0.82rem;
       color: #6b5e56;
-      margin-bottom: 1.5rem;
+      font-style: italic;
+      margin-bottom: 2rem;
     }
+
+    .loading { display: none; font-style: italic; color: #6b5e56; margin-bottom: 1.5rem; }
 
     .error-block {
       background: #fdecea;
@@ -144,20 +117,18 @@ HTML = """
       margin-bottom: 2rem;
     }
 
-    .result-header {
+    .result-header { margin-bottom: 1.5rem; }
+    .result-header h2 { font-size: 1.25rem; font-weight: normal; margin-bottom: 0.3rem; }
+    .result-header .meta { font-size: 0.9rem; color: #6b5e56; font-style: italic; }
+
+    .supplier-meta {
+      background: #fff;
+      border: 1px solid #e0d8ce;
+      padding: 0.8rem 1rem;
+      border-radius: 2px;
       margin-bottom: 1.5rem;
-    }
-
-    .result-header h2 {
-      font-size: 1.25rem;
-      font-weight: normal;
-      margin-bottom: 0.3rem;
-    }
-
-    .result-header .meta {
-      font-size: 0.9rem;
-      color: #6b5e56;
-      font-style: italic;
+      font-size: 0.92rem;
+      color: #4a3830;
     }
 
     table {
@@ -181,17 +152,33 @@ HTML = """
     tbody tr:nth-child(odd) { background: #faf8f5; }
     tbody tr:nth-child(even) { background: #fff; }
     tbody tr:hover { background: #f0ebe3; }
+    tbody td { padding: 0.6rem 0.9rem; border-bottom: 1px solid #e8e0d6; }
 
-    tbody td {
-      padding: 0.6rem 0.9rem;
-      border-bottom: 1px solid #e8e0d6;
+    .legend { font-size: 0.82rem; color: #6b5e56; line-height: 1.8; margin-top: 0.75rem; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 2px;
+      font-size: 0.8rem;
+    }
+    .status-Победитель { background: #e6f4ea; color: #1e6e3a; }
+    .status-Резервист  { background: #fff3e0; color: #8a5a00; }
+    .status-Участник   { background: #f0ebe3; color: #4a3830; }
+
+    .participants-block {
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid #c8bfb4;
     }
 
-    .legend {
-      font-size: 0.82rem;
+    .participants-block h3 {
+      font-size: 1rem;
+      font-weight: normal;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
       color: #6b5e56;
-      line-height: 1.8;
-      margin-top: 0.75rem;
+      margin-bottom: 1rem;
     }
 
     .ai-block {
@@ -264,6 +251,7 @@ HTML = """
         <button type="submit">Найти</button>
       </div>
     </form>
+    <p class="search-hint">{{ hint }}</p>
 
     <p class="loading">Ищем...</p>
 
@@ -312,6 +300,35 @@ HTML = """
       {% else %}
         <p class="no-results">Этот товар не покупался вместе с другими.</p>
       {% endif %}
+
+      {% if participants_info %}
+        <div class="participants-block">
+          <h3>Участники и победители процедур</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>№</th>
+                <th>Процедура</th>
+                <th>Участник</th>
+                <th>ИНН</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in participants_info %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ p.order_id }}</td>
+                <td>{{ p.participant }}</td>
+                <td>{{ p.inn }}</td>
+                <td><span class="status-badge status-{{ p.status }}">{{ p.status }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
       {% if ai_answer %}
         <div class="ai-block">
           <h3>AI-анализ</h3>
@@ -322,9 +339,10 @@ HTML = """
 
     <!-- ВКЛ 2: конкуренты -->
     {% if tab == 'competitors' and results is not none %}
-      <div class="result-header">
-        <h2>Конкуренты: «{{ query }}»</h2>
-        <p class="meta">Участвовал в {{ total }} лотах. Встречался с:</p>
+      <div class="supplier-meta">
+        Участник: <strong>{{ participant_name }}</strong>
+        {% if participant_inn %} &nbsp;·&nbsp; ИНН: {{ participant_inn }}{% endif %}
+        &nbsp;·&nbsp; Лотов: {{ total }}
       </div>
       {% if results %}
         <table>
@@ -350,28 +368,12 @@ HTML = """
       {% endif %}
     {% endif %}
 
-    <!-- ВКЛ 3: категории торгов -->
-    {% if tab == 'categories' and results is not none %}
-      <div class="result-header">
-        <h2>Категории торгов: «{{ query }}»</h2>
-        <p class="meta">Участвовал в {{ total }} лотах. Категории:</p>
-      </div>
-      {% if results %}
-        <ul class="category-list">
-          {% for cat in results %}
-          <li>{{ loop.index }}. {{ cat }}</li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="no-results">Категории не найдены.</p>
-      {% endif %}
-    {% endif %}
-
-    <!-- ВКЛ 4: категории номенклатуры поставщика -->
+    <!-- ВКЛ 3: категории номенклатуры поставщика -->
     {% if tab == 'item_categories' and results is not none %}
-      <div class="result-header">
-        <h2>Номенклатуры поставщика: «{{ query }}»</h2>
-        <p class="meta">Участвовал в {{ total }} лотах. Категории номенклатуры:</p>
+      <div class="supplier-meta">
+        Участник: <strong>{{ participant_name }}</strong>
+        {% if participant_inn %} &nbsp;·&nbsp; ИНН: {{ participant_inn }}{% endif %}
+        &nbsp;·&nbsp; Лотов: {{ total }}
       </div>
       {% if results %}
         <ul class="category-list">
@@ -392,7 +394,12 @@ HTML = """
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    ctx = dict(tab="items", action="/", placeholder="Введите номенклатуру...")
+    ctx = dict(
+        tab="items",
+        action="/",
+        placeholder="Введите номенклатуру...",
+        hint="Введите точное название номенклатуры"
+    )
 
     if request.method == "GET":
         return render_template_string(HTML, **ctx)
@@ -401,72 +408,85 @@ def index():
     if not query:
         return render_template_string(HTML, error="Введите название номенклатуры.", **ctx)
 
-    results, total = get_frequent_companions(
-        query, item_to_orders, order_to_items, item_to_supplier_count, item_to_torgs, top_n=10
-    )
+    results, participants_info, total = get_frequent_companions(query, top_n=10)
 
     if results is None:
         return render_template_string(HTML, query=query, error=total, **ctx)
 
     ai_answer = search_ai(query)
-    return render_template_string(HTML, query=query, results=results, total=total, ai_answer=ai_answer, **ctx)
+    return render_template_string(
+        HTML,
+        query=query,
+        results=results,
+        participants_info=participants_info,
+        total=total,
+        ai_answer=ai_answer,
+        **ctx
+    )
 
 
 @app.route("/competitors", methods=["GET", "POST"])
 def competitors():
-    ctx = dict(tab="competitors", action="/competitors", placeholder="Введите название организации...")
+    ctx = dict(
+        tab="competitors",
+        action="/competitors",
+        placeholder="Введите название организации или ИНН...",
+        hint="Можно ввести название участника торгов или его ИНН"
+    )
 
     if request.method == "GET":
         return render_template_string(HTML, **ctx)
 
     query = request.form.get("query", "").strip()
     if not query:
-        return render_template_string(HTML, error="Введите название организации.", **ctx)
+        return render_template_string(HTML, error="Введите название или ИНН.", **ctx)
 
-    results, total = get_competitors(query, top_n=20)
-
-    if results is None:
-        return render_template_string(HTML, query=query, error=total, **ctx)
-
-    return render_template_string(HTML, query=query, results=results, total=total, **ctx)
-
-
-@app.route("/categories", methods=["GET", "POST"])
-def categories():
-    ctx = dict(tab="categories", action="/categories", placeholder="Введите название организации...")
-
-    if request.method == "GET":
-        return render_template_string(HTML, **ctx)
-
-    query = request.form.get("query", "").strip()
-    if not query:
-        return render_template_string(HTML, error="Введите название организации.", **ctx)
-
-    results, total = get_supplier_categories(query)
+    results, participant_name, participant_inn, total = get_competitors(query, top_n=20)
 
     if results is None:
         return render_template_string(HTML, query=query, error=total, **ctx)
 
-    return render_template_string(HTML, query=query, results=results, total=total, **ctx)
+    return render_template_string(
+        HTML,
+        query=query,
+        results=results,
+        participant_name=participant_name,
+        participant_inn=participant_inn,
+        total=total,
+        **ctx
+    )
 
 
 @app.route("/item_categories", methods=["GET", "POST"])
 def item_categories():
-    ctx = dict(tab="item_categories", action="/item_categories", placeholder="Введите название организации...")
+    ctx = dict(
+        tab="item_categories",
+        action="/item_categories",
+        placeholder="Введите название организации или ИНН...",
+        hint="Можно ввести название участника торгов или его ИНН"
+    )
 
     if request.method == "GET":
         return render_template_string(HTML, **ctx)
 
     query = request.form.get("query", "").strip()
     if not query:
-        return render_template_string(HTML, error="Введите название организации.", **ctx)
+        return render_template_string(HTML, error="Введите название или ИНН.", **ctx)
 
-    results, total = get_supplier_item_categories(query)
+    results, participant_name, participant_inn, total = get_supplier_item_categories(query)
 
     if results is None:
         return render_template_string(HTML, query=query, error=total, **ctx)
 
-    return render_template_string(HTML, query=query, results=results, total=total, **ctx)
+    return render_template_string(
+        HTML,
+        query=query,
+        results=results,
+        participant_name=participant_name,
+        participant_inn=participant_inn,
+        total=total,
+        **ctx
+    )
 
 
 if __name__ == "__main__":
