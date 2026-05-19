@@ -355,10 +355,11 @@ HTML = """
             </tr>
           </thead>
           <tbody>
-            {% for name, count in results %}
+            {% for name, count, inn in results %}
             <tr>
               <td>{{ loop.index }}</td>
               <td>{{ name }}</td>
+              <td>{{ inn }}</td>
               <td>{{ count }}</td>
             </tr>
             {% endfor %}
